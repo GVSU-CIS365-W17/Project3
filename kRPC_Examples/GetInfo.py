@@ -37,6 +37,8 @@ def print_vessel_info(vessel, indent='\t'):
     print(indent, repr('Avail Engine Torque: ').ljust(left_col), repr(vessel.available_engine_torque))
     print(indent, repr('Avail Ctrl Surface Torque: ').ljust(left_col), repr(vessel.available_control_surface_torque))
     print(indent, repr('Avail Other Torque: ').ljust(left_col), repr(vessel.available_other_torque))
+    print(indent, repr('Orbit Apoapsis: ').ljust(left_col), repr(vessel.orbit.apoapsis_altitude))
+    print(indent, repr('Orbit Periapsis: ').ljust(left_col), repr(vessel.orbit.periapsis_altitude))
     # print(indent, repr('ReferenceFrame OBJ: ').ljust(left_col), repr(vessel.reference_frame))
     # print(indent, repr('OrbitalRefFrame OBJ: ').ljust(left_col), repr(vessel.orbital_reference_frame))
     # print(indent, repr('SurfaceRefFrame OBJ: ').ljust(left_col), repr(vessel.surface_reference_frame))
@@ -74,18 +76,19 @@ def print_flight_info(flight, indent='\t'):
 conn = krpc.connect(name='Display Info script')
 vessel = conn.space_center.active_vessel
 
-while True:
-    os.system('cls' if os.name == 'nt' else 'clear')
+if __name__ == '__main__':
+    while True:
+        os.system('cls' if os.name == 'nt' else 'clear')
 
-    print('VESSEL INFO:')
-    print('----------------------------------------')
-    print_vessel_info(vessel)
+        print('VESSEL INFO:')
+        print('----------------------------------------')
+        print_vessel_info(vessel)
 
-    print('\nFLIGHT INFO:')
-    print('----------------------------------------')
-    print_flight_info(vessel.flight())
+        print('\nFLIGHT INFO:')
+        print('----------------------------------------')
+        print_flight_info(vessel.flight())
 
-    # Orbital speed appears to be the only one that works
-    print('\n\t', repr('Orbital Speed: ').ljust(30), repr(vessel.orbit.speed))
+        # Orbital speed appears to be the only one that works
+        print('\n\t', repr('Orbital Speed: ').ljust(30), repr(vessel.orbit.speed))
 
-    time.sleep(1)
+        time.sleep(5)
