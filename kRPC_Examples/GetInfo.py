@@ -75,20 +75,41 @@ def print_flight_info(flight, indent='\t'):
 
 conn = krpc.connect(name='Display Info script')
 vessel = conn.space_center.active_vessel
+parts = [(c._object_id, c.decouple_stage) for c in vessel.parts.all]
 
 if __name__ == '__main__':
     while True:
         os.system('cls' if os.name == 'nt' else 'clear')
 
-        print('VESSEL INFO:')
-        print('----------------------------------------')
-        print_vessel_info(vessel)
+        #print('VESSEL INFO:')
+        #print('----------------------------------------')
+        #print_vessel_info(vessel)
 
-        print('\nFLIGHT INFO:')
+        #print('\nFLIGHT INFO:')
         print('----------------------------------------')
-        print_flight_info(vessel.flight())
+        #print_flight_info(vessel.flight(conn.space_center.bodies["Kerbin"].reference_frame))
+
+        flight = vessel.flight(conn.space_center.bodies["Kerbin"].reference_frame)
+
+        print ("Horizontal Speed: ",flight.horizontal_speed)
+        print ("Vertical Speed: ",flight.vertical_speed, "<------" if flight.vertical_speed < 0 else "")
+        print ("g-force: ", flight.g_force)
+        print ("Specific Impulse: ", vessel.specific_impulse)
+        print ("Specific Impulse Vacume: ", vessel.vacuum_specific_impulse)
+        print ("Available Thrust: ", vessel.available_thrust)
+        print("Thrust: ", vessel.thrust)
+        print ("Max Vacume Thrust: ", vessel.max_vacuum_thrust)
+        # print ("Parts")
+        # for part in vessel.parts.all:
+        #     print ("name", part.name, "stage", part.stage, ":", part.decouple_stage)
+        for part in parts:
+            print (part[0], part[1])
+            if [c._object_id for c in  vessel.parts.all].__contains__(part[0]):
+                continue
+            elif part[1] > 0:
+                print ("Exploson occured")
 
         # Orbital speed appears to be the only one that works
-        print('\n\t', repr('Orbital Speed: ').ljust(30), repr(vessel.orbit.speed))
+        #print('\n\t', repr('Orbital Speed: ').ljust(30), repr(vessel.orbit.speed))
 
         time.sleep(5)
