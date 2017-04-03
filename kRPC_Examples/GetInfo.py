@@ -1,7 +1,6 @@
 import krpc
 import os
 import time
-from io import StringIO
 
 def print_vessel_info(vessel, indent='\t'):
     left_col = 30
