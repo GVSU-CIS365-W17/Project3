@@ -32,10 +32,10 @@ class Ksp:
         return Ksp.__game
 
     def stage(self):
+        if self.__stage < 0:
+            return
         self.__stage -= 1
         self.vessel.control.activate_next_stage()
-
-
 
     #TODO Improve this method though it works as is
     @property
@@ -49,19 +49,15 @@ class Ksp:
             print("exiting for orbit")
             print("apoapsis",self.vessel.orbit.apoapsis_altitude)
             print("periapsis", self.vessel.orbit.periapsis_altitude)
-            self.score = self.getFinalScore
             return False
         if brokeFlightPatern(self.vessel.situation):
             print (self.vessel.situation)
-            self.score = self.getFinalScore
             return False
         if brokeSpeed(self.flight.vertical_speed) and inFlightRange(self.flight.mean_altitude):
             print ("reject for speed")
-            self.score = self.getFinalScore
             return False
         if self.notExploded():
             print ("Exploson occured")
-            self.score = self.getFinalScore
             return False
         return True
 
@@ -76,23 +72,6 @@ class Ksp:
     def restart(self) -> None:
         self.conn.space_center.load("ProjectStart")
         return
-
-    #TODO based on its conditions it will return a socre
-    @property
-    def getFinalScore(self) -> int:
-        score = 0
-        runTime = time.localtime(time.time())[5] - self.launchTime[5]
-        score += runTime/ (15*60) # persentage of runtime used should probably use curve that returns best value for 10 minutes
-        if self.vessel.situation == self.vessel.situation.orbiting:
-            score += 50
-        if self.vessel.situation == self.vessel.situation.sub_orbital:
-            score += 10
-        if self.vessel.situation == self.vessel.situation.flying and (self.flight.mean_altitude > 100 and self.flight.mean_altitude < 70000):
-            score += 1
-        if self.vessel.situation not in [self.vessel.situation.flying, self.vessel.situation.orbiting, self.vessel.situation.sub_orbital]:
-            score = 0
-        #TODO add some other stuff to score with
-        return score
 
     def useOutput(self, inputs: list) -> None:
         #TODO so we can either do this which might actually be dangerous because it might push it over the max value
