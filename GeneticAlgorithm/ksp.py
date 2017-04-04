@@ -2,6 +2,7 @@ import krpc
 import numpy as np
 import time
 import math
+from monitor import Monitor
 
 class Ksp:
     __game = None
@@ -25,6 +26,7 @@ class Ksp:
         val.append(elevation/150000)
         val.append(self.vessel.orbit.periapsis_altitude/75000)
         val.append(self.vessel.orbit.apoapsis_altitude/150000)
+        val.append(self.fuelRemaining(self.vessel)/100)
         return val
 
     @property
@@ -41,11 +43,11 @@ class Ksp:
     @property
     def isValidFlight(self) -> bool:
         brokeApoapsis = lambda x: x > 150000
-        brokePeriapsis = lambda x: x > 75000
         brokeFlightPatern = lambda x: x not in [self.vessel.situation.flying, self.vessel.situation.orbiting, self.vessel.situation.sub_orbital]
         brokeSpeed = lambda x: x <= 0
         inFlightRange = lambda x: x > 100 and x < 70000
-        if brokePeriapsis(self.vessel.orbit.periapsis_altitude) or brokeApoapsis(self.vessel.orbit.apoapsis_altitude):
+        outOfFuel = lambda x: self.fuelRemaining(x) == 0
+        if brokeApoapsis(self.vessel.orbit.apoapsis_altitude):
             print("exiting for orbit")
             print("apoapsis",self.vessel.orbit.apoapsis_altitude)
             print("periapsis", self.vessel.orbit.periapsis_altitude)
@@ -59,7 +61,13 @@ class Ksp:
         if self.notExploded():
             print ("Exploson occured")
             return False
+        if outOfFuel(self.vessel):
+            print("Out of Fuel")
+            return False
         return True
+
+    def fuelRemaining(self, vessel):
+        return min([vessel.resources.amount("LiquidFuel"), vessel.resources.amount("Oxidizer")])
 
     def notExploded(self) -> bool:
         for part in self.__parts:
@@ -70,27 +78,28 @@ class Ksp:
         return False
 
     def restart(self) -> None:
+        self.__stage = max(c.decouple_stage for c in self.vessel.parts.all)
         self.conn.space_center.load("ProjectStart")
         return
 
     def useOutput(self, inputs: list) -> None:
-        #TODO so we can either do this which might actually be dangerous because it might push it over the max value
-        # or we could do something like input[0] - 0.5 * 180 and input[0] * 360
         pitch = inputs[0] - 0.5 * 180
         heading = inputs[1] * 360
         self.autoPilot.target_pitch_and_heading(pitch, heading)
         self.vessel.control.throttle = inputs[2]
         if inputs[3] > 0.5:
-            self.vessel.control.activate_next_stage()
+            self.stage()
 
     def launch(self) -> None:
         self.stage()
         self.score = 0
+        Monitor.this.runUpdate(self.vessel.reference_frame, (0, 0, 0), (90, 90, -90, 0))
         self.launchTime = time.localtime(time.time())
         return
 
     def __init__(self):
         self.conn = krpc.connect(name="Genetics")
+        Monitor.this = Monitor(self.conn)
         print(self.conn.krpc.get_status().version)
         self.kerbin = self.conn.space_center.bodies["Kerbin"]
         print(self.kerbin.name)

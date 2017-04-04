@@ -2,15 +2,25 @@ import neat
 import fitness
 import os
 import reporter
+import re
 
-#TODO this method
 def run(fileName:str):
-    # comment these next two lines to and uncomment the other 3 to resore from a checkpoint
-    config = neat.Config(neat.DefaultGenome,neat.DefaultReproduction, neat.DefaultSpeciesSet, neat.DefaultStagnation, fileName)
-    population = neat.Population(config)
-    # local_dir = os.path.dirname(__file__)
-    # config_path = os.path.join(local_dir, 'neat-checkpoint-39')
-    # population = neat.Checkpointer.restore_checkpoint(config_path)
+    local_dir = os.path.dirname(__file__)
+    checkpoint = None
+    checkpointNum = 0
+    for file in os.listdir(local_dir):
+        results = re.search("neat-checkpoint-(\d+)", file)
+        if results and results.group(1).isdigit():
+            if checkpointNum < int(results.group(1)):
+                checkpointNum = int(results.group(1))
+                checkpoint = results.group(0)
+    if checkpoint is not None:
+        config_path = os.path.join(local_dir, checkpoint)
+        population = neat.Checkpointer.restore_checkpoint(config_path)
+    else:
+        config = neat.Config(neat.DefaultGenome, neat.DefaultReproduction, neat.DefaultSpeciesSet,
+                             neat.DefaultStagnation, fileName)
+        population = neat.Population(config)
 
     # Adding reporters so we have some output
     population.add_reporter(neat.StdOutReporter(True))
@@ -19,5 +29,5 @@ def run(fileName:str):
     population.add_reporter(neat.Checkpointer(5))
     population.add_reporter(reporter.CustomReporter())
 
-    population.run(fitness.score, 300)
+    population.run(fitness.execute, 300)
     return
