@@ -12,10 +12,9 @@ class Ksp:
         val.append(self.vessel.control.throttle)
         val.append(self.flight.horizontal_speed/1000)
         val.append(self.flight.vertical_speed/1000)
-        heading = self.autoPilot.target_heading + self.autoPilot.heading_error
-        val.append(heading/360)
-        pitch = self.autoPilot.target_pitch + self.autoPilot.pitch_error
-        val.append(pitch/90)
+        val.append(self.flight.heading/360)
+        val.append(self.flight.pitch/90)
+        val.append(self.flight.roll/180)
         val.append(self.vessel.thrust/215000)
         val.append(self.vessel.available_thrust/215000)
         val.append(self.vessel.specific_impulse/320)
@@ -27,6 +26,34 @@ class Ksp:
         val.append(self.vessel.orbit.periapsis_altitude/75000)
         val.append(self.vessel.orbit.apoapsis_altitude/150000)
         val.append(self.fuelRemaining(self.vessel)/100)
+        val.append(self.control.current_stage)
+        val.append(self.flight.atmosphere_density)  # no scale
+        val.append(self.flight.dynamic_pressure/10000)  # 10000 scale
+        val.append(self.flight.static_pressure/10000)  # 10000 scale
+        val.append(self.flight.aerodynamic_force[0]/10)  # 10 scale list of 3
+        val.append(self.flight.aerodynamic_force[1] / 10)  # 10 scale list of 3
+        val.append(self.flight.aerodynamic_force[2] / 10)  # 10 scale list of 3
+        val.append(self.flight.angle_of_attack/90)  # 90 scale
+        val.append(self.flight.sideslip_angle/90)  # 90 scale
+        val.append(self.vessel.moment_of_inertia[0]/10000)  # 10000 scale list of 3
+        val.append(self.vessel.moment_of_inertia[1] / 10000)  # 10000 scale list of 3
+        val.append(self.vessel.moment_of_inertia[2] / 10000)  # 10000 scale list of 3
+        val.append(self.vessel.available_torque[0][0]/10000)  # 10000 scale two lists of 3
+        val.append(self.vessel.available_torque[0][1]/10000)  # 10000 scale two lists of 3
+        val.append(self.vessel.available_torque[0][2]/10000)  # 10000 scale two lists of 3
+        val.append(self.vessel.available_torque[1][0]/10000)  # 10000 scale two lists of 3
+        val.append(self.vessel.available_torque[1][1]/10000)  # 10000 scale two lists of 3
+        val.append(self.vessel.available_torque[1][2]/10000)  # 10000 scale two lists of 3
+        frame = self.conn.space_center.bodies["Kerbin"].reference_frame
+        val.append(self.vessel.rotation(frame)[0])  # no scale list of 3
+        val.append(self.vessel.rotation(frame)[1])  # no scale list of 3
+        val.append(self.vessel.rotation(frame)[2])  # no scale list of 3
+        val.append(self.vessel.direction(frame)[0])  # no scale list of 3
+        val.append(self.vessel.direction(frame)[1])  # no scale list of 3
+        val.append(self.vessel.direction(frame)[2])  # no scale list of 3
+        val.append(self.vessel.angular_velocity(frame)[0])  # no scale list of 3
+        val.append(self.vessel.angular_velocity(frame)[1])  # no scale list of 3
+        val.append(self.vessel.angular_velocity(frame)[2])  # no scale list of 3
         return val
 
     @property
@@ -37,7 +64,7 @@ class Ksp:
         if self.__stage < 0:
             return
         self.__stage -= 1
-        self.vessel.control.activate_next_stage()
+        self.control.activate_next_stage()
 
     #TODO Improve this method though it works as is
     @property
@@ -45,7 +72,8 @@ class Ksp:
         brokeApoapsis = lambda x: x > 150000
         brokeFlightPatern = lambda x: x not in [self.vessel.situation.flying, self.vessel.situation.orbiting, self.vessel.situation.sub_orbital]
         brokeSpeed = lambda x: x <= 0
-        inFlightRange = lambda x: x > 100 and x < 70000
+        inFlightRange = lambda x: x > 85 and x < 70000
+        outOfTime = lambda x: x >= 15*60
         outOfFuel = lambda x: self.fuelRemaining(x) == 0
         if brokeApoapsis(self.vessel.orbit.apoapsis_altitude):
             print("exiting for orbit")
@@ -63,6 +91,10 @@ class Ksp:
             return False
         if outOfFuel(self.vessel):
             print("Out of Fuel")
+            return False
+        if outOfTime(self.vessel.met):
+            print(self.vessel.met*60)
+            print("Out of time")
             return False
         return True
 
@@ -83,18 +115,19 @@ class Ksp:
         return
 
     def useOutput(self, inputs: list) -> None:
-        pitch = inputs[0] - 0.5 * 180
-        heading = inputs[1] * 360
-        self.autoPilot.target_pitch_and_heading(pitch, heading)
-        self.vessel.control.throttle = inputs[2]
-        if inputs[3] > 0.5:
+        self.control.pitch = inputs[0] - 0.5 * 180
+        self.control.yaw = inputs[1] * 360
+        self.control.roll = inputs[2]
+        self.control.throttle = inputs[3]
+        if inputs[4] > 0.5:
             self.stage()
 
     def launch(self) -> None:
         self.stage()
         self.score = 0
-        Monitor.this.runUpdate(self.vessel.reference_frame, (0, 0, 0), (90, 90, -90, 0))
-        self.launchTime = time.localtime(time.time())
+        self.control.sas = True
+        self.control.sas_mode = self.control.sas_mode.stability_assist
+        Monitor.this.runUpdate()
         return
 
     def __init__(self):
@@ -104,12 +137,11 @@ class Ksp:
         self.kerbin = self.conn.space_center.bodies["Kerbin"]
         print(self.kerbin.name)
         self.vessel = self.conn.space_center.active_vessel
-        self.autoPilot = self.vessel.auto_pilot
+        self.control = self.vessel.control
         self.flight = self.vessel.flight(self.kerbin.reference_frame)
         self.sasEnum = self.vessel.control.sas_mode
         Ksp.__game = self
         self.score = 0
         self.__stage = max(c.decouple_stage for c in self.vessel.parts.all)
         self.__parts = [(c._object_id, c.decouple_stage) for c in self.vessel.parts.all]
-        self.launchTime = time.localtime(time.time())
         self.conn.space_center.save("ProjectStart")

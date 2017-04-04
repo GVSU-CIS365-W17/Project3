@@ -45,8 +45,7 @@ def execute(genomes, config):
         Ksp.game.restart()
         time.sleep(5) # need to wait until its loaded
         Ksp.game.launch()
-        startTime = time.localtime(time.time())[4] # get minutes
-        while startTime + 15 > time.localtime(time.time())[4] and Ksp.game.isValidFlight:
+        while Ksp.game.isValidFlight:
             #time.sleep(2)
             Ksp.game.useOutput(net.activate(Ksp.game.getInputs()))
             #kRPC_Examples.GetInfo.print_flight_info()

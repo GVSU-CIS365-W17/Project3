@@ -89,24 +89,29 @@ if __name__ == '__main__':
         #print_flight_info(vessel.flight(conn.space_center.bodies["Kerbin"].reference_frame))
 
         flight = vessel.flight(conn.space_center.bodies["Kerbin"].reference_frame)
+        frame = conn.space_center.bodies["Kerbin"].reference_frame
 
-        print ("Horizontal Speed: ",flight.horizontal_speed)
-        print ("Vertical Speed: ",flight.vertical_speed, "<------" if flight.vertical_speed < 0 else "")
-        print ("g-force: ", flight.g_force)
-        print ("Specific Impulse: ", vessel.specific_impulse)
-        print ("Specific Impulse Vacume: ", vessel.vacuum_specific_impulse)
-        print ("Available Thrust: ", vessel.available_thrust)
-        print("Thrust: ", vessel.thrust)
-        print ("Max Vacume Thrust: ", vessel.max_vacuum_thrust)
+        print("Atmospheric Density:", flight.atmosphere_density) # no scale
+        print("Dynamic Pressure:", flight.dynamic_pressure) # 10000 scale
+        print("Static Pressure:", flight.static_pressure) # 10000 scale
+        print("Aerodynamic Force:", flight.aerodynamic_force) # 10 scale
+        print("Angle of Attack:", flight.angle_of_attack) # 90 scale
+        print("Side Slip Angle:", flight.sideslip_angle) # 90 scale
+        print("Moment of Inertia:", vessel.moment_of_inertia) # 10000 scale
+        print("Inertial Tensor:", vessel.inertia_tensor) # do not use
+        print("Avalible Tourqe:", vessel.available_torque) # 10000 scale two lists of 3
+        print("Rotation:", vessel.rotation(frame)) #no scale list of 3
+        print("Direction:", vessel.direction(frame)) #no scale list of 3
+        print("Angular Velocity:", vessel.angular_velocity(frame)) #no scale list of 3
         # print ("Parts")
         # for part in vessel.parts.all:
         #     print ("name", part.name, "stage", part.stage, ":", part.decouple_stage)
-        for part in parts:
-            print (part[0], part[1])
-            if [c._object_id for c in  vessel.parts.all].__contains__(part[0]):
-                continue
-            elif part[1] > 0:
-                print ("Exploson occured")
+        # for part in parts:
+        #     print (part[0], part[1])
+        #     if [c._object_id for c in  vessel.parts.all].__contains__(part[0]):
+        #         continue
+        #     elif part[1] > 0:
+        #         print ("Exploson occured")
 
         # Orbital speed appears to be the only one that works
         #print('\n\t', repr('Orbital Speed: ').ljust(30), repr(vessel.orbit.speed))

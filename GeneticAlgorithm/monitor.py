@@ -32,7 +32,7 @@ class Monitor:
         if score > self.__maxScore or force:
             self.__maxScore = score
 
-    def runUpdate(self, refFrame, position:tuple, rotation:tuple) -> None:
+    def runUpdate(self) -> None:
         panel1 = self.__conn.ui.stock_canvas.add_panel()
         panel2 = self.__conn.ui.stock_canvas.add_panel()
         panel3 = self.__conn.ui.stock_canvas.add_panel()

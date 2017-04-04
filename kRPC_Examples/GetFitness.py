@@ -4,12 +4,12 @@ import time
 import math
 
 # VERTICAL_WEIGHT = 1
-HORIZONTAL_WEIGHT = 1
+HORIZONTAL_WEIGHT = 0
 ALTITUDE_WEIGHT = 1
 AP_WEIGHT = 0.02
 PE_WEIGHT = 0.02
 ORBITAL_GOAL = 80000
-ORBIT_WEIGHT = 10000000
+ORBIT_WEIGHT = 50
 FUEL_WEIGHT = 1
 
 
@@ -28,7 +28,7 @@ def calc_fitness(vessel):
         altitude = 70000
 
     if vessel.situation != vessel.situation.orbiting:
-        return HORIZONTAL_WEIGHT * velocity + ALTITUDE_WEIGHT * altitude - (periapsisDiff * PE_WEIGHT + apoapsisDiff * AP_WEIGHT)
+        return (HORIZONTAL_WEIGHT * velocity + ALTITUDE_WEIGHT * altitude - (periapsisDiff * PE_WEIGHT + apoapsisDiff * AP_WEIGHT))/10000
     else:
         return ORBIT_WEIGHT + FUEL_WEIGHT * fuel - (periapsisDiff * PE_WEIGHT + apoapsisDiff * AP_WEIGHT)
 
