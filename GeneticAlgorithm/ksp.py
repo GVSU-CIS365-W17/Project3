@@ -91,9 +91,10 @@ class Ksp:
             self.stage()
 
     def launch(self) -> None:
+        self.conn.space_center.save ("ProjectStart")
         self.stage()
         self.score = 0
-        Monitor.this.runUpdate(self.vessel.reference_frame, (0, 0, 0), (90, 90, -90, 0))
+        print (Monitor.this)
         self.launchTime = time.localtime(time.time())
         return
 
