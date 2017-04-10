@@ -22,11 +22,11 @@ def run(fileName:str):
         population = neat.Population(config)
 
     # Adding reporters so we have some output
-    population.add_reporter(neat.StdOutReporter(True))
+    #population.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     population.add_reporter(stats)
     population.add_reporter(neat.Checkpointer(5))
-    #population.add_reporter(reporter.CustomReporter())
+    population.add_reporter(reporter.CustomReporter(True))
 
     population.run(fitness.execute, 1000)
     return

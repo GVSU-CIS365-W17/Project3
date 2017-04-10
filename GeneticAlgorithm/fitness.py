@@ -3,6 +3,7 @@ import neat
 from ksp import Ksp
 import krpc
 from monitor import Monitor
+import reporter
 import math
 import subprocess
 import pyautogui
@@ -91,7 +92,7 @@ def execute(genomes, config):
         subprocess.call('cls',shell=True)
         print("Fitness: ", genome.fitness)
         print(Ksp.death)
-        print(neat.StdOutReporter.previousGeneration)
+        print(reporter.CustomReporter.previousGeneration)
         try:
             file = open("logs.lg", "a")
             file.write(str(genome.fitness))
