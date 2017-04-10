@@ -78,7 +78,9 @@ class Ksp:
         return False
 
     def restart(self) -> None:
-        self.__stage = max(c.decouple_stage for c in self.vessel.parts.all)
+        if len(self.vessel.parts.all) > 1:
+            self.__stage = max(c.decouple_stage for c in self.vessel.parts.all)
+            
         self.conn.space_center.load("ProjectStart")
         return
 
