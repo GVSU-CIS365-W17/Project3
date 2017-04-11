@@ -94,7 +94,7 @@ class Ksp:
     #TODO Improve this method though it works as is
     @property
     def isValidFlight(self) -> bool:
-        brokeApoapsis = lambda x: x > 150000
+        brokeApoapsis = lambda x: x > 400000
         brokeFlightPatern = lambda x: x not in [self.vessel.situation.flying, self.vessel.situation.orbiting, self.vessel.situation.sub_orbital, self.vessel.situation.pre_launch]
         brokeSpeed = lambda x: x <= 0
         inFlightRange = lambda x: x > 80 and x < 70000
