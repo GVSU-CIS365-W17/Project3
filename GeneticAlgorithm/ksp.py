@@ -7,6 +7,7 @@ import pyautogui
 from multiprocessing import Process, Queue
 
 class Ksp:
+    # class variables
     __game = None
     __revertPosition = (796, 536)
     __launchPad = (1257, 388)
@@ -16,18 +17,23 @@ class Ksp:
     __ai2 = (755, 409)
     __load = (1001, 763)
     __leaveAnyway = (965, 545)
+
+    # stores the game process
     APP = None
-    
+
+    # clicks in the given location on ksp
     @staticmethod
     def click(tup):
         Ksp.bringToFront()
         pyautogui.click(tup[0],tup[1])
     
+    # brings ksp to the front
     @staticmethod
     def bringToFront():
         pyautogui.getWindow("Kerbal Space Program").restore()
         pyautogui.getWindow("Kerbal Space Program").set_foreground()
     
+    # gets all the inputs for the ANN
     def getInputs(self) -> list:
         val = []
         val.append(self.vessel.control.throttle)
@@ -80,20 +86,25 @@ class Ksp:
 #        print("end")
         return val
 
+    # gives this somewhat of the ability to be a singleton
     @property
     def game(self):
         return Ksp.__game
 
+    # wraps the staging command so that way it can only stage when its appropriate
     def stage(self):
         if self.control.current_stage < 0 or self.vessel.available_thrust > 0:
             return
         self.__stage -= 1
         self.control.activate_next_stage()
 
+    # stores the previous failure info
     death = None
-    #TODO Improve this method though it works as is
+
+    # checks to see if this is a valid flight
     @property
     def isValidFlight(self) -> bool:
+        # don't ask me why I used lambdas here honestly just made it easier to understand the if statements
         brokeApoapsis = lambda x: x > 400000
         brokeFlightPatern = lambda x: x not in [self.vessel.situation.flying, self.vessel.situation.orbiting, self.vessel.situation.sub_orbital, self.vessel.situation.pre_launch]
         brokeSpeed = lambda x: x <= 0
@@ -106,6 +117,8 @@ class Ksp:
             print("periapsis", self.vessel.orbit.periapsis_altitude)
             Ksp.death = "exiting for orbit"
             return False
+
+        # needed to check the throttle to make sure we didn't just hit the supports on the way up and get back a landed value
         if brokeFlightPatern(self.vessel.situation) and self.control.throttle < 0.5:
             print ("Vessel not in correct flight situation:", self.vessel.situation)
             Ksp.death = "Vessel not in correct flight situation: " + str(self.vessel.situation)
@@ -134,9 +147,11 @@ class Ksp:
             return False
         return True
 
+    # gets the remaining burnable fuel of the vessel
     def fuelRemaining(self, vessel):
         return min([vessel.resources.amount("LiquidFuel"), vessel.resources.amount("Oxidizer")])
 
+    # technically gets if the craft has lost any parts that it shouldn't have given the current stage
     def notExploded(self) -> bool:
         for part in self.__parts:
             if [c._object_id for c in self.vessel.parts.all].__contains__(part[0]):
@@ -145,12 +160,14 @@ class Ksp:
                 return True
         return False
 
+    # reloads the game and reconnects to krpc because sometimes it will loose connection when saving and loading
     def restart(self) -> None:
         self.__stage = self.__maxStage
         self.load()
         self.reconnect()
         return
-        
+
+    # quits to the Main Menu then reloads the actual save does more than just loading
     def reloadGame(self):
         Ksp.bringToFront()
         self.conn.close()
@@ -170,16 +187,25 @@ class Ksp:
         print("loading AI2")
         Ksp.click(Ksp.__load)
         q = Queue()
+
+        # interestingly enough sometimes it will fail to get back into the game correctly and if that
+        # happens then it will hang this allows me to test the connection and not get stuck
         p = Process(target=Ksp.testConnection, args=(q,))
         p.start()
         p.join(10)
+
+        # if the process is alive then the process is hanging and I didn't reload the game so we need to exit or
+        # we could just click through again but I wouldn't know what screen I was on
         if p.is_alive():
             print("Failed to reconnect to krpc")
             raise Exception("Failed to connect")
         time.sleep(0.5)
         Ksp.goToLaunchPad()
         self.reconnect()
-    
+
+    # clicks on the launch pad and goes to the ship on the launch pad because there should always be on there
+    # if there isn't then this will fail and it will suck would need to be able to find out if there was one on the
+    # pad but sadly krpc doesn't really work unless you are in a flight even though it says it does
     @staticmethod
     def goToLaunchPad():
         print("clicking launch pad")
@@ -189,6 +215,7 @@ class Ksp:
         Ksp.click(Ksp.__gtShip)
         time.sleep(1)
         
+    # reconnects to krpc and gets all the appropriate values
     def reconnect(self):
         gameSceen = self.tryToConnect()
         if gameSceen is None:
@@ -200,11 +227,13 @@ class Ksp:
         self.flight = self.vessel.flight(self.kerbin.reference_frame)
         self.score = 0
         
-    @staticmethod    
+    # tests if it can connect and if it can then it puts true into the process Queue
+    @staticmethod
     def testConnection(q):
         krpc.connect(name="Test")
         q.put(True)
         
+    # trys to connect to krpc if it fails more than 5 times it explodes
     def tryToConnect(self):
         for i in range(5):
             #print("Attempting to connect try:", i)
@@ -218,7 +247,8 @@ class Ksp:
         if self.conn is None:
             return False
         return self.conn.krpc.current_game_scene
-    
+
+    # reverts the flight, previously used but seems to cause issues with krpc connections
     def revertFlight(self):
         pyautogui.getWindow("Kerbal Space Program").restore()
         pyautogui.getWindow("Kerbal Space Program").set_foreground()
@@ -226,13 +256,15 @@ class Ksp:
         pyautogui.press("esc")
         time.sleep(0.5)
         pyautogui.click(x = self.__revertPosition[0], y = self.__revertPosition[1], clicks = 2, interval = 2)
-    
+
+    # uses the output from the neural network
     def useOutput(self, inputs: list) -> None:
         self.control.pitch = (inputs[0] - 0.5) * 2
         self.control.yaw = (inputs[1] - 0.5) *2
         self.control.throttle = inputs[2]
         self.stage()
 
+    # saves the game on the launch pad then launches it, should probably check that it is in preflight before saving
     def launch(self) -> None:
         self.save()
         self.__stage -= 1
@@ -246,13 +278,16 @@ class Ksp:
         #Monitor.this.runUpdate()
         return
 
+    # wraps the save command
     def save(self): 
         self.conn.space_center.save("ProjectStart")
-    
+
+    # wraps the load command
     def load(self): 
         self.conn.space_center.load("ProjectStart")
         
     def __init__(self):
+        # allows you to get pyautogui to stop if need be
         pyautogui.FAILSAFE = False
         self.conn = None
         self.tryToConnect()
@@ -267,6 +302,10 @@ class Ksp:
         self.sasEnum = self.vessel.control.sas_mode
         Ksp.__game = self
         self.score = 0
+
+        # gets the current stage max decoupled stage for all parts connected different from current stage potentially
         self.__stage = max(c.decouple_stage for c in self.vessel.parts.all)
         self.__maxStage = self.__stage
+
+        # stores a list of tuples of all the parts ids and decoupled stages
         self.__parts = [(c._object_id, c.decouple_stage) for c in self.vessel.parts.all]

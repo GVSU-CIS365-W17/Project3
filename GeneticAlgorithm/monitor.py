@@ -1,6 +1,7 @@
 import krpc
 import os
 
+# this class is essentially static and really shouldn't ever exist more than once
 class Monitor:
     this = None
     __maxAlt = 0
@@ -11,6 +12,7 @@ class Monitor:
     def __init__(self):
         return
 
+    # set commands check that this is a new max then sets them
     def setMaxAlt(self, alt:int) -> None:
         if alt > Monitor.__maxAlt:
             Monitor.__maxAlt = alt
@@ -27,6 +29,7 @@ class Monitor:
         if score > Monitor.__maxScore or force or Monitor.__maxScore == 0:
             Monitor.__maxScore = score
 
+    # used to write onto ksp using krpc.space_center.ui but it caused lag so that got trashed
     def runUpdate(self) -> None:
         print (self)
 

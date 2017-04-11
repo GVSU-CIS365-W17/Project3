@@ -1,5 +1,6 @@
 import neat.reporting
 from neat.six_util import itervalues, iterkeys
+import subprocess as sp
 
 class CustomReporter(neat.reporting.StdOutReporter):
     previousGeneration = None
@@ -15,17 +16,19 @@ class CustomReporter(neat.reporting.StdOutReporter):
     def post_evaluate(self, config, population:neat.Population, species, best_genome):
         super().post_evaluate(config, population, species, best_genome)
             
+    # this is essentially the same as the base except it stores everything in a class variable instead of printing
+    # it out
     def end_generation(self, config, population, species_set):
         ng = len(population)
         ns = len(species_set.species)
         if self.show_species_detail:
             sp.call('cls',shell=True)
-            StdOutReporter.previousGeneration = ""
-            StdOutReporter.previousGeneration += 'Population of {0:d} members in {1:d} species:'.format(ng, ns) + os.linesep
+            CustomReporter.previousGeneration = ""
+            CustomReporter.previousGeneration += 'Population of {0:d} members in {1:d} species:'.format(ng, ns) + os.linesep
             sids = list(iterkeys(species_set.species))
             sids.sort()
-            StdOutReporter.previousGeneration += "   ID   age  size  fitness  adj fit  stag" + os.linesep
-            StdOutReporter.previousGeneration += "  ====  ===  ====  =======  =======  ====" + os.linesep
+            CustomReporter.previousGeneration += "   ID   age  size  fitness  adj fit  stag" + os.linesep
+            CustomReporter.previousGeneration += "  ====  ===  ====  =======  =======  ====" + os.linesep
             for sid in sids:
                 s = species_set.species[sid]
                 a = self.generation - s.created
@@ -33,11 +36,11 @@ class CustomReporter(neat.reporting.StdOutReporter):
                 f = "--" if s.fitness is None else "{:.1f}".format(s.fitness)
                 af = "--" if s.adjusted_fitness is None else "{:.3f}".format(s.adjusted_fitness)
                 st = self.generation - s.last_improved
-                StdOutReporter.previousGeneration += "  {: >4}  {: >3}  {: >4}  {: >7}  {: >7}  {: >4}".format(sid, a, n, f, af, st) + os.linesep
+                CustomReporter.previousGeneration += "  {: >4}  {: >3}  {: >4}  {: >7}  {: >7}  {: >4}".format(sid, a, n, f, af, st) + os.linesep
         else:
             print('Population of {0:d} members in {1:d} species'.format(ng, ns))
         
-        print(StdOutReporter.previousGeneration)
+        print(CustomReporter.previousGeneration)
         elapsed = time.time() - self.generation_start_time
         self.generation_times.append(elapsed)
         self.generation_times = self.generation_times[-10:]
